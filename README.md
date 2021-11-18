@@ -1,0 +1,1 @@
+# setup-cosmosdb-action
