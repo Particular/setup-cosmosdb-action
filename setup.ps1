@@ -21,7 +21,7 @@ echo "Actions agent running in Azure region $region"
 if (!$allowedRegions.contains($region))
 {
   echo "Region '$region' not currently allowed for Cosmos DB."
-  $randomIndex = Get-Random -Minimum 0 -Maximum $allowedRegions.length
+  $randomIndex = Get-Random -Minimum 0 -Maximum $allowedRegions.count
   $region = $allowedRegions[$randomIndex]
   echo "Region randomly reset to $region"
 }
