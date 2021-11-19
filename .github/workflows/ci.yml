@@ -32,7 +32,6 @@ jobs:
         with:
           connection-string-name: CosmosConnectionString
           azure-credentials: ${{ secrets.AZURE_ACI_CREDENTIALS }}
-          azure-allowed-regions: ${{ secrets.COSMOS_ALLOWED_REGIONS }}
           tag: setup-cosmosdb-action
       - name: Validate
         shell: pwsh

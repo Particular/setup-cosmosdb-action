@@ -9,7 +9,7 @@ $configDir = ".ci-config/$cosmosName"
 $configPath = ".ci-config/$cosmosName/azure-regions.config"
 git clone --branch config https://github.com/Particular/setup-cosmosdb-action $configDir
 
-$allowedRegions = Get-Content ./.ci-config/azure-regions.config | Where-Object { $_.trim() -ne '' -And !$_.startsWith('#') }
+$allowedRegions = Get-Content $configPath | Where-Object { $_.trim() -ne '' -And !$_.startsWith('#') }
 echo "Allowed Regions:"
 $allowedRegions | ForEach-Object { echo " * $_" }
 
