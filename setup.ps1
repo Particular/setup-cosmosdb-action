@@ -5,11 +5,10 @@ param (
 )
 
 echo "Cloning 'config' branch to determine currently-allowed Azure regions..."
-$configDir = ".ci-config/$cosmosName"
-$configPath = ".ci-config/$cosmosName/azure-regions.config"
-git clone --branch config https://github.com/Particular/setup-cosmosdb-action $configDir
+git clone --branch config https://github.com/Particular/setup-cosmosdb-action .ci-config
+[array]$allowedRegions = Get-Content .ci-config/azure-regions.config | Where-Object { $_.trim() -ne '' -And !$_.startsWith('#') }
+rm -Rf .ci-config
 
-[array]$allowedRegions = Get-Content $configPath | Where-Object { $_.trim() -ne '' -And !$_.startsWith('#') }
 echo "Allowed Regions:"
 $allowedRegions | ForEach-Object { echo " * $_" }
 
