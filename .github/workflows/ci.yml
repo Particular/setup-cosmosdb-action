@@ -11,16 +11,12 @@ on:
 jobs:
   ci:
     runs-on: ${{ matrix.os }}
-    name: ${{ matrix.name }}-${{ matrix.api }}
+    name: ${{ matrix.api }}-${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         api: [ 'CoreSQL', 'Table' ]
-        include:
-          - name: Windows
-            os: windows-2019
-          - name: Linux
-            os: ubuntu-20.04
+        os: [ windows-2019, ubuntu-20.04 ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2.4.0
