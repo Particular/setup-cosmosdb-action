@@ -9,7 +9,7 @@ $configDir = ".ci-config/$cosmosName"
 $configPath = ".ci-config/$cosmosName/azure-regions.config"
 git clone --branch config https://github.com/Particular/setup-cosmosdb-action $configDir
 
-$allowedRegions = Get-Content $configPath | Where-Object { $_.trim() -ne '' -And !$_.startsWith('#') }
+[array]$allowedRegions = Get-Content $configPath | Where-Object { $_.trim() -ne '' -And !$_.startsWith('#') }
 echo "Allowed Regions:"
 $allowedRegions | ForEach-Object { echo " * $_" }
 
@@ -21,7 +21,7 @@ echo "Actions agent running in Azure region $region"
 if (!$allowedRegions.contains($region))
 {
   echo "Region '$region' not currently allowed for Cosmos DB."
-  $randomIndex = Get-Random -Minimum 0 -Maximum $allowedRegions.count
+  $randomIndex = Get-Random -Minimum 0 -Maximum $allowedRegions.length
   $region = $allowedRegions[$randomIndex]
   echo "Region randomly reset to $region"
 }
