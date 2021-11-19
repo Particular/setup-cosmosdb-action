@@ -1,0 +1,36 @@
+name: CI
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+jobs:
+  ci:
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.4.0
+      - name: Run
+        uses: ./
+        with:
+          connection-string-name: CosmosConnectionString
+          azure-credentials: ${{ secrets.AZURE_ACI_CREDENTIALS }}
+          azure-allowed-regions: ${{ secrets.COSMOS_ALLOWED_REGIONS }}
+          tag: setup-cosmosdb-action
+      - name: Validate
+        shell: pwsh
+        run: |
+          if ( $Env:CosmosConnectionString -le 0 ) {
+            throw "Environment variable  'CosmosConnectionString' not set."
+          }

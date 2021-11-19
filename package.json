@@ -1,0 +1,25 @@
+{
+  "name": "setup-cosmosdb-action",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "update": "npm i https://github.com/DavidBoike/run-pwsh#main",
+    "prepare": "ncc build index.js -o dist --license licenses.txt"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Particular/setup-cosmosdb-action.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Particular/setup-cosmosdb-action/issues"
+  },
+  "homepage": "https://github.com/Particular/setup-cosmosdb-action#readme",
+  "dependencies": {
+    "@actions/core": "^1.6.0",
+    "@actions/exec": "^1.1.0"
+  }
+}
