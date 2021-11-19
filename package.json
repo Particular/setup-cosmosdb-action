@@ -4,7 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "update": "npm i https://github.com/DavidBoike/run-pwsh#main",
     "prepare": "ncc build index.js -o dist --license licenses.txt"
   },
   "repository": {

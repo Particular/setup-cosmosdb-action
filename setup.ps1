@@ -11,6 +11,9 @@ $region = $hostInfo.compute.location
 echo "Actions agent running in Azure region $region"
 
 $allowedRegions = $azureAllowedRegions.split(',')
+echo "Allowed Regions:"
+echo $allowedRegions
+
 if (!$allowedRegions.contains($region))
 {
   echo "Region '$region' not currently allowed for Cosmos DB."
