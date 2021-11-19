@@ -11,10 +11,11 @@ on:
 jobs:
   ci:
     runs-on: ${{ matrix.os }}
-    name: ${{ matrix.name }}
+    name: ${{ matrix.name }}-${{ matrix.api }}
     strategy:
       fail-fast: false
       matrix:
+        api: [ 'CoreSQL', 'Table' ]
         include:
           - name: Windows
             os: windows-2019
@@ -33,6 +34,7 @@ jobs:
           connection-string-name: CosmosConnectionString
           azure-credentials: ${{ secrets.AZURE_ACI_CREDENTIALS }}
           tag: setup-cosmosdb-action
+          api: ${{ matrix.api }}
       - name: Validate
         shell: pwsh
         run: |

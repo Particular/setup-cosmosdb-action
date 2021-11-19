@@ -16,6 +16,12 @@ core.saveState('IsPost', true);
 let connectionStringName = core.getInput('connection-string-name');
 let azureCredentials = core.getInput('azure-credentials');
 let tagName = core.getInput('tag');
+let api = core.getInput('api');
+
+if (api !== 'CoreSQL' && api !== 'Table') {
+    core.setFailed("Parameter 'api' must be either 'CoreSQL' or 'Table'. Default is 'CoreSQL'.");
+    return;
+}
 
 async function run() {
 
@@ -34,7 +40,8 @@ async function run() {
                 '-File', setupPs1,
                 '-cosmosName', cosmosName,
                 '-connectionStringName', connectionStringName,
-                '-tagName', tagName
+                '-tagName', tagName,
+                '-api', api
             ]);
 
         } else { // Cleanup

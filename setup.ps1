@@ -1,7 +1,8 @@
 param (
     [string]$cosmosName,
     [string]$connectionStringName,
-    [string]$tagName
+    [string]$tagName,
+    [string]$api
 )
 
 echo "Cloning 'config' branch to determine currently-allowed Azure regions..."
@@ -28,25 +29,42 @@ if (!$allowedRegions.contains($region))
 $packageTag = "Package=$tagName"
 $runnerOsTag = "RunnerOS=$($Env:RUNNER_OS)"
 $dateTag = "Created=$(Get-Date -Format "yyyy-MM-dd")"
+$capabilities = If ($api -eq "Table") { "EnableTable" } Else { "EnableServerless" }
 echo "Creating CosmosDB database account $cosmosName (This can take awhile.)"
-$acctDetails = az cosmosdb create --name $cosmosName --location regionName=$region failoverPriority=0 isZoneRedundant=False --resource-group GitHubActions-RG --capabilities EnableServerless --tags $packageTag $runnerOsTag $dateTag | ConvertFrom-Json
+$acctDetails = az cosmosdb create --name $cosmosName --location regionName=$region failoverPriority=0 isZoneRedundant=False --resource-group GitHubActions-RG --capabilities $capabilities --tags $packageTag $runnerOsTag $dateTag | ConvertFrom-Json
 
-if(!$acctDetails || !$acctDetails.documentEndpoint)
+if (!$acctDetails)
 {
   echo "Account creation failed. $acctDetails"
-  echo "If Azure is reporting demand too high for this region, refer to documentation for COSMOS_ALLOWED_REGIONS secret and consider updating."
+  echo "If Azure is reporting demand too high for this region, update https://github.com/Particular/setup-cosmosdb-action/blob/config/azure-regions.config"
   exit 1;
 }
 
-$documentEndpoint = $acctDetails.documentEndpoint
-echo "::add-mask::$documentEndpoint"
+if ($api -eq "CoreSQL") {
 
-echo "Getting CosmosDB access keys"
-$keyDetails = az cosmosdb keys list --name $cosmosName --resource-group GitHubActions-RG | ConvertFrom-Json
-$cosmosKey = $keyDetails.primaryMasterKey
-echo "::add-mask::$cosmosKey"
+  $documentEndpoint = $acctDetails.documentEndpoint
+  echo "::add-mask::$documentEndpoint"
 
-echo "Creating CosmosDB SQL Database "
-$dbDetails = az cosmosdb sql database create --name CosmosDBPersistence --account-name $cosmosName --resource-group GitHubActions-RG | ConvertFrom-Json
+  echo "Getting CosmosDB access keys"
+  $keyDetails = az cosmosdb keys list --name $cosmosName --resource-group GitHubActions-RG | ConvertFrom-Json
+  $cosmosKey = $keyDetails.primaryMasterKey
+  echo "::add-mask::$cosmosKey"
 
-echo "$connectionStringName=AccountEndpoint=$($documentEndpoint);AccountKey=$($cosmosKey);" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+  echo "Creating CosmosDB SQL Database "
+  $dbDetails = az cosmosdb sql database create --name CosmosDBPersistence --account-name $cosmosName --resource-group GitHubActions-RG | ConvertFrom-Json
+
+  echo "$connectionStringName=AccountEndpoint=$($documentEndpoint);AccountKey=$($cosmosKey);" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+}
+
+if ($api -eq "Table") {
+
+  echo "Creating CosmosDB Table API Table"
+  $tblDetails = az cosmosdb table create --account-name $cosmosname --resource-group GitHubActions-RG --name TablesDB | ConvertFrom-JSON
+
+  echo "Getting CosmosDB access keys"
+  $keyDetails = az cosmosdb keys list --name $cosmosname --resource-group GitHubActions-RG --type connection-strings | ConvertFrom-Json
+  $cosmosConnectString = $($keyDetails.connectionStrings | Where-Object { $_.description -eq 'Primary Table Connection String' }).connectionString
+  echo "::add-mask::$cosmosConnectString"
+
+  echo "$connectionStringName=$cosmosConnectString" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+}

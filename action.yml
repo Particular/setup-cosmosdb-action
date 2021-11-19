@@ -10,6 +10,10 @@ inputs:
   tag:
     description: The name of the component Cosmos DB is being used for. The Cosmos DB instance in Azure is tagged with this value.
     required: true
+  api:
+    description: The Cosmos DB API to set up. Choices are 'CoreSQL' (default) or 'Table'
+    required: false
+    default: CoreSQL
 runs:
   using: node12
   main: dist/index.js
