@@ -13,21 +13,10 @@ console.log('Cleanup path: ' + cleanupPs1);
 let isPost = core.getState('IsPost');
 core.saveState('IsPost', true);
 
-console.log("Is Post = " + isPost);
-
 let connectionStringName = core.getInput('connection-string-name');
 let azureCredentials = core.getInput('azure-credentials');
 let azureAllowedRegions = core.getInput('azure-allowed-regions');
 let tagName = core.getInput('tag');
-
-console.log('Inputs (except credentials)');
-
-console.log('connection-string-name');
-console.log(connectionStringName);
-console.log('azure-allowed-regions');
-console.log(azureAllowedRegions);
-console.log('tag');
-console.log(tagName);
 
 async function run() {
 
@@ -40,9 +29,9 @@ async function run() {
             let cosmosName = 'psw-cosmosdb-' + Math.round(10000000000 * Math.random());
             core.saveState('CosmosName', cosmosName);
 
-            console.log("Cosmos Name = " + cosmosName);
+            console.log("CosmosName = " + cosmosName);
 
-            await exec.exec('pwsh' [
+            await exec.exec('pwsh', [
                 '-File', setupPs1,
                 '-cosmosName', cosmosName,
                 '-connectionStringName', connectionStringName,
@@ -56,7 +45,7 @@ async function run() {
 
             let cosmosName = core.getState('CosmosName');
 
-            await exec.exec('pwsh' [
+            await exec.exec('pwsh', [
                 '-File', cleanupPs1,
                 '-cosmosName', cosmosName,
                 '-azureCredentials', azureCredentials
@@ -71,5 +60,4 @@ async function run() {
 
 }
 
-console.log("Running");
 run();
