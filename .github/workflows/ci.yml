@@ -21,6 +21,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2.4.0
+      - name: Azure login
+        uses: azure/login@v1.3.0
+        with:
+          creds: ${{ secrets.AZURE_ACI_CREDENTIALS }}
       - name: Run
         uses: ./
         with:
