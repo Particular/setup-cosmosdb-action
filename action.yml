@@ -7,9 +7,6 @@ inputs:
   azure-credentials:
     description: The JSON blob containing the Azure login credentials. Required for cleaning up the Cosmos DB instance.
     required: true
-  azure-allowed-regions:
-    description: A comma-separated list of allowed regions. If the runner is not running in one of these regions, one will be chosen randomly from the list.
-    required: true
   tag:
     description: The name of the component Cosmos DB is being used for. The Cosmos DB instance in Azure is tagged with this value.
     required: true

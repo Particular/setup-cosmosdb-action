@@ -15,7 +15,6 @@ core.saveState('IsPost', true);
 
 let connectionStringName = core.getInput('connection-string-name');
 let azureCredentials = core.getInput('azure-credentials');
-let azureAllowedRegions = core.getInput('azure-allowed-regions');
 let tagName = core.getInput('tag');
 
 async function run() {
@@ -35,7 +34,6 @@ async function run() {
                 '-File', setupPs1,
                 '-cosmosName', cosmosName,
                 '-connectionStringName', connectionStringName,
-                '-azureAllowedRegions', azureAllowedRegions,
                 '-tagName', tagName
             ]);
 

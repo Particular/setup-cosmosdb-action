@@ -1,18 +1,22 @@
 param (
     [string]$cosmosName,
     [string]$connectionStringName,
-    [string]$azureAllowedRegions,
     [string]$tagName
 )
+
+echo "Cloning 'config' branch to determine currently-allowed Azure regions..."
+$configDir = ".ci-config/$cosmosName"
+$configPath = ".ci-config/$cosmosName/azure-regions.config"
+git clone --branch config https://github.com/Particular/setup-cosmosdb-action $configDir
+
+$allowedRegions = Get-Content ./.ci-config/azure-regions.config | Where-Object { $_.trim() -ne '' -And !$_.startsWith('#') }
+echo "Allowed Regions:"
+$allowedRegions | ForEach-Object { echo " * $_" }
 
 echo "Getting the Azure region in which this workflow is running..."
 $hostInfo = curl --silent -H Metadata:true "169.254.169.254/metadata/instance?api-version=2017-08-01" | ConvertFrom-Json
 $region = $hostInfo.compute.location
 echo "Actions agent running in Azure region $region"
-
-$allowedRegions = $azureAllowedRegions.split(',')
-echo "Allowed Regions:"
-echo $allowedRegions
 
 if (!$allowedRegions.contains($region))
 {
@@ -22,8 +26,8 @@ if (!$allowedRegions.contains($region))
   echo "Region randomly reset to $region"
 }
 
-$packageTag = "Package=$packageName"
-$runnerOsTag = "RunnerOS=$($Env:EDITOR)"
+$packageTag = "Package=$tagName"
+$runnerOsTag = "RunnerOS=$($Env:RUNNER_OS)"
 $dateTag = "Created=$(Get-Date -Format "yyyy-MM-dd")"
 echo "Creating CosmosDB database account $cosmosName (This can take awhile.)"
 $acctDetails = az cosmosdb create --name $cosmosName --location regionName=$region failoverPriority=0 isZoneRedundant=False --resource-group GitHubActions-RG --capabilities EnableServerless --tags $packageTag $runnerOsTag $dateTag | ConvertFrom-Json
