@@ -5,8 +5,8 @@ param (
     [string]$tagName
 )
 
-# Retrieve the Azure region in which this workflow is running. This region should be used to create addtional resources.
-$hostInfo = curl -H Metadata:true "169.254.169.254/metadata/instance?api-version=2017-08-01" | ConvertFrom-Json
+echo "Getting the Azure region in which this workflow is running..."
+$hostInfo = curl --silent -H Metadata:true "169.254.169.254/metadata/instance?api-version=2017-08-01" | ConvertFrom-Json
 $region = $hostInfo.compute.location
 echo "Actions agent running in Azure region $region"
 

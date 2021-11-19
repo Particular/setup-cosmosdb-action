@@ -1,6 +1,6 @@
 param (
     [string]$cosmosName,
-    [SecureString]$azureCredentials
+    [string]$azureCredentials
 )
 
 # Use this once cosmosdb delete offers --no-wait argument, until then, it takes too long (~7m) and we use curl instead

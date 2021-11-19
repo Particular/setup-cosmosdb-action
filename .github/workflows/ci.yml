@@ -16,6 +16,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: Windows
+            os: windows-2019
           - name: Linux
             os: ubuntu-20.04
     steps:
@@ -35,6 +37,7 @@ jobs:
       - name: Validate
         shell: pwsh
         run: |
+          echo "CosmosConnectionString = $($Env:CosmosConnectionString)"
           if ( $Env:CosmosConnectionString -le 0 ) {
             throw "Environment variable  'CosmosConnectionString' not set."
           }
