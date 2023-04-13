@@ -20,7 +20,7 @@ jobs:
         os: [ windows-2019, ubuntu-20.04 ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.5.0
+        uses: actions/checkout@v3.5.1
       - name: Azure login
         uses: azure/login@v1.4.7
         with:
