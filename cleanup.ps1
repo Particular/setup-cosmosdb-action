@@ -10,4 +10,4 @@ param (
 $credentials = $azureCredentials | ConvertFrom-Json
 $subscriptionId = $credentials.subscriptionId
 az rest --method DELETE `
-     --uri https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/GitHubActions-RG/providers/Microsoft.DocumentDB/databaseAccounts/$cosmosName?api-version=2021-04-15
+     --uri https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/GitHubActions-RG/providers/Microsoft.DocumentDB/databaseAccounts/${cosmosName}?api-version=2021-04-15
