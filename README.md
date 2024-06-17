@@ -27,6 +27,8 @@ To set up a Cosmos DB account using the Table API:
           tag: PackageName
 ```
 
+The setup action also automatically propagates an environment variable called `EnvVarToCreateWithConnectionString_Api` with a value that represens the chosen API flavour.
+
 ## Allowed regions
 
 The action tries to create the Cosmos DB account in the same region as the GitHub runner currently assigned to the workflow in order to minimize latency. However, sometimes Azure does not have enough Cosmos DB capacity in certain regions, causing account creation to fail.
