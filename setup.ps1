@@ -68,3 +68,6 @@ if ($api -eq "Table") {
 
   echo "$connectionStringName=$cosmosConnectString" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
 }
+
+$apiFlavour = "$($connectionStringName)_Api"
+echo "$apiFlavour=$api" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
