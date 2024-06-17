@@ -12,6 +12,7 @@ public class ConnectionStringTableApiTests
         var tableServiceClient = new TableServiceClient(Environment.GetEnvironmentVariable("CosmosConnectionString"));
         var tableClient = tableServiceClient.GetTableClient("testtable");
         var response = await tableClient.CreateIfNotExistsAsync();
-        Assert.That(response.HasValue, Is.True);
+
+        Assert.That(response.GetRawResponse().Status, Is.InRange(200, 299));
     }
 }

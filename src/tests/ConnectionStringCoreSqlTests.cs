@@ -11,6 +11,7 @@ public class ConnectionStringCoreSqlTests
     {
         var cosmosClient = new CosmosClient(Environment.GetEnvironmentVariable("CosmosConnectionString"));
         var response = await cosmosClient.CreateDatabaseIfNotExistsAsync("testdb");
+
         Assert.That(response.StatusCode, Is.InRange(200, 299));
     }
 }
