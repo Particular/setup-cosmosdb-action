@@ -16,7 +16,7 @@ public class ConnectionStringCoreSqlTests
     }
 
     [Test]
-    public async Task Should_establish_table_connection()
+    public async Task Should_establish_database_connection()
     {
         var cosmosClient = new CosmosClient(Environment.GetEnvironmentVariable("CosmosConnectionString"));
         var response = await cosmosClient.CreateDatabaseIfNotExistsAsync("testdb");
