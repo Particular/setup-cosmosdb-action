@@ -3,18 +3,9 @@ using NUnit.Framework;
 
 namespace Tests;
 
-[TestFixture]
+[TestFixture, TableApiOnly]
 public class ConnectionStringTableApiTests
 {
-    [SetUp]
-    public void Setup()
-    {
-        if (Environment.GetEnvironmentVariable("CosmosConnectionString_Api") != "Table")
-        {
-            Assert.Inconclusive("Skipping test because CosmosConnectionString_Api is not set to 'Table'");
-        }
-    }
-
     [Test]
     public async Task Should_establish_table_connection()
     {

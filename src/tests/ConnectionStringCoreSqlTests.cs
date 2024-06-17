@@ -3,18 +3,9 @@ using NUnit.Framework;
 
 namespace Tests;
 
-[TestFixture]
+[TestFixture, CoreSqlOnly]
 public class ConnectionStringCoreSqlTests
 {
-    [SetUp]
-    public void Setup()
-    {
-        if (Environment.GetEnvironmentVariable("CosmosConnectionString_Api") != "CoreSQL")
-        {
-            Assert.Inconclusive("Skipping test because CosmosConnectionString_Api is not set to 'CoreSQL'");
-        }
-    }
-
     [Test]
     public async Task Should_establish_database_connection()
     {
