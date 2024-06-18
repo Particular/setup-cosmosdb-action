@@ -34,12 +34,12 @@ public sealed class CoreSqlOnlyAttribute : NUnitAttribute, IApplyToTest
             return;
         }
 
-        if (Environment.GetEnvironmentVariable("CosmosConnectionString_Api") == "CoreSQL")
+        if (Environment.GetEnvironmentVariable("CosmosConnectionString_Api") == "Sql")
         {
             return;
         }
 
         test.RunState = RunState.Ignored;
-        test.Properties.Set(PropertyNames.SkipReason, "Skipping test because CosmosConnectionString_Api is not set to 'CoreSQL'");
+        test.Properties.Set(PropertyNames.SkipReason, "Skipping test because CosmosConnectionString_Api is not set to 'Sql'");
     }
 }
