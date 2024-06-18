@@ -33,7 +33,7 @@ The setup action also automatically propagates an environment variable called `E
 
 The action tries to create the Cosmos DB account in the same region as the GitHub runner currently assigned to the workflow in order to minimize latency. However, sometimes Azure does not have enough Cosmos DB capacity in certain regions, causing account creation to fail.
 
-The [config branch of this repository]() stores the [azure-regions.config file](https://github.com/Particular/setup-cosmosdb-action/blob/config/azure-regions.config) which controls which regions are allowed. If the GitHub Actions runner is not running in one of these regions, an allowed region will be selected at random.
+The [config branch of this repository](https://github.com/Particular/setup-cosmosdb-action/blob/config/) stores the [azure-regions.config file](https://github.com/Particular/setup-cosmosdb-action/blob/config/azure-regions.config) which controls which regions are allowed. If the GitHub Actions runner is not running in one of these regions, an allowed region will be selected at random.
 
 The list can be updated via a PR to the config branch.
 
