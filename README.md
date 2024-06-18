@@ -40,3 +40,22 @@ The list can be updated via a PR to the config branch.
 ## License
 
 The scripts and documentation in this project are released under the [MIT License](LICENSE).
+
+## Development
+
+Open the folder in Visual Studio Code and do the following:
+
+Log into Azure
+
+```bash
+az login
+az account set --subscription SUBSCRIPTION_ID
+```
+
+Run the npm installation
+
+```bash
+npm install
+```
+
+When changing `index.js`, either run `npm run dev` beforehand, which will watch the file for changes and automatically compile it, or run `npm run prepare` afterwards.
