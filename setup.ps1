@@ -40,7 +40,7 @@ if (!$acctDetails)
   exit 1;
 }
 
-if ($api -eq "CoreSQL") {
+if ($api -eq "Sql") {
   echo "Creating CosmosDB SQL Database "
   $dbDetails = az cosmosdb sql database create --name CosmosDBPersistence --account-name $cosmosName --resource-group GitHubActions-RG | ConvertFrom-Json
 }
@@ -52,7 +52,7 @@ if ($api -eq "Table") {
 
 echo "Getting CosmosDB access keys"
 $keyDetails = az cosmosdb keys list --name $cosmosname --resource-group GitHubActions-RG --type connection-strings | ConvertFrom-Json
-$cosmosConnectString = $($keyDetails.connectionStrings | Where-Object { $_.keyKind -eq 'Primary' }).connectionString
+$cosmosConnectString = $($keyDetails.connectionStrings | Where-Object { $_.keyKind -eq 'Primary' -and $_.type -eq $api }).connectionString
 echo "::add-mask::$cosmosConnectString"
 echo "$connectionStringName=$cosmosConnectString" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
 
