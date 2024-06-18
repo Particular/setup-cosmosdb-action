@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [ windows-2022, ubuntu-22.04 ]
-        api: [ 'CoreSQL', 'Table' ]
+        api: [ 'Sql', 'Table' ]
         include:
           - os: windows-2022
             name: Windows
