@@ -18,8 +18,8 @@ let azureCredentials = core.getInput('azure-credentials');
 let tagName = core.getInput('tag');
 let api = core.getInput('api');
 
-if (api !== 'CoreSQL' && api !== 'Table') {
-    core.setFailed("Parameter 'api' must be either 'CoreSQL' or 'Table'. Default is 'CoreSQL'.");
+if (api !== 'Sql' && api !== 'Table') {
+    core.setFailed("Parameter 'api' must be either 'Sql' or 'Table'. Default is 'Sql'.");
     return;
 }
 

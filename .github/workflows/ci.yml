@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [ windows-2022, ubuntu-22.04 ]
-        api: [ 'CoreSQL', 'Table' ]
+        api: [ 'Sql', 'Table' ]
         include:
           - os: windows-2022
             name: Windows
@@ -44,3 +44,11 @@ jobs:
           if ( $Env:CosmosConnectionString -le 0 ) {
             throw "Environment variable  'CosmosConnectionString' not set."
           }
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4.0.0
+        with:
+          dotnet-version: 8.0.x
+      - name: Build
+        run: dotnet build src --configuration Release
+      - name: Run tests
+        uses: Particular/run-tests-action@v1.7.0
