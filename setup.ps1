@@ -7,7 +7,6 @@ param (
 )
 
 $credentials = $azureCredentials | ConvertFrom-Json
-$principalId = $credentials.principalId
 
 echo "Cloning 'config' branch to determine currently-allowed Azure regions..."
 git clone --branch config https://github.com/Particular/setup-cosmosdb-action .ci-config
@@ -50,7 +49,7 @@ if ($api -eq "Sql") {
   echo "Creating CosmosDB SQL Database Container"
   $containerDetails = az cosmosdb sql container create --resource-group GitHubActions-RG --account-name $cosmosName --database-name CosmosDBPersistence --name CosmosDBPersistenceContainer --partition-key-path "/id"
   echo "Assigning Cosmos DB Built-in Data Contributor"
-  $roleAssignmentDetails = az cosmosdb sql role assignment create --account-name $cosmosName --resource-group GitHubActions-RG --role-assignment-id 00000000-0000-0000-0000-000000000002 --scope "/subscriptions/$($credentials.subscriptionId)/resourceGroups/GitHubActions-RG/providers/Microsoft.DocumentDB/databaseAccounts/$($cosmosName)" --principal-id $principalId --role-definition-name "Cosmos DB Built-in Data Contributor"
+  $roleAssignmentDetails = az cosmosdb sql role assignment create --account-name $cosmosName --resource-group GitHubActions-RG --role-assignment-id 00000000-0000-0000-0000-000000000002 --scope "/subscriptions/$($credentials.subscriptionId)/resourceGroups/GitHubActions-RG/providers/Microsoft.DocumentDB/databaseAccounts/$($cosmosName)" --principal-id $credentials.principalId --role-definition-name "Cosmos DB Built-in Data Contributor"
 }
 
 if ($api -eq "Table") {
