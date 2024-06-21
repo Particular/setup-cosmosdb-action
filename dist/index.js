@@ -4151,7 +4151,8 @@ async function run() {
                 '-cosmosName', cosmosName,
                 '-connectionStringName', connectionStringName,
                 '-tagName', tagName,
-                '-api', api
+                '-api', api,
+                '-azureCredentials', azureCredentials
             ]);
 
         } else { // Cleanup
