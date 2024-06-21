@@ -7,7 +7,7 @@ param (
 )
 
 $credentials = $azureCredentials | ConvertFrom-Json
-$principalId = $credentials.principalId;
+$principalId = $credentials.principalId
 
 echo "Cloning 'config' branch to determine currently-allowed Azure regions..."
 git clone --branch config https://github.com/Particular/setup-cosmosdb-action .ci-config
