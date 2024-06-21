@@ -21,8 +21,8 @@ public class DefaultCredentialsCoreSqlTests
         var cosmosClient = new CosmosClient($"{accountEndpoint}", new DefaultAzureCredential(), new CosmosClientOptions());
 
         // with RBAC data plane operations are not supported, so we are using the existing database and container
-        var database = cosmosClient.GetDatabase("CosmosDBPersistence");
-        var container = database.GetContainer("CosmosDBPersistenceContainer");
+        var database = cosmosClient.GetDatabase(Environment.GetEnvironmentVariable("CosmosConnectionString_DatabaseName"));
+        var container = database.GetContainer(Environment.GetEnvironmentVariable("CosmosConnectionString_ContainerOrTableName"));
         var response = await container.CreateItemAsync(new Customer { id = Guid.NewGuid().ToString(), Name = "John Doe" });
 
         Assert.That(response.StatusCode, Is.InRange(200, 299));
