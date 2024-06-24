@@ -58,7 +58,7 @@ if ($api -eq "Sql") {
   echo "Creating CosmosDB SQL Database Container"
   $containerDetails = az cosmosdb sql container create --resource-group $resourceGroup --account-name $cosmosName --database-name $databaseName --name $containerName --partition-key-path "/id"
   echo "Assigning Cosmos DB Built-in Data Contributor"
-  $roleAssignmentDetails = az cosmosdb sql role assignment create --account-name $cosmosName --resource-group $resourceGroup --role-assignment-id 00000000-0000-0000-0000-000000000002 --scope "/subscriptions/$($credentials.subscriptionId)/resourceGroups/$($resourceGroup)/providers/Microsoft.DocumentDB/databaseAccounts/$($cosmosName)" --principal-id $credentials.principalId --role-definition-name "Cosmos DB Built-in Data Contributor"
+  $roleAssignmentDetails = az cosmosdb sql role assignment create --account-name $cosmosName --resource-group $resourceGroup --role-assignment-id 00000000-0000-0000-0000-000000000002 --scope $acctDetails.id --principal-id $credentials.principalId --role-definition-name "Cosmos DB Built-in Data Contributor"
 }
 
 if ($api -eq "Table") {
