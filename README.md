@@ -27,7 +27,10 @@ To set up a Cosmos DB account using the Table API:
           tag: PackageName
 ```
 
-The setup action also automatically propagates an environment variable called `EnvVarToCreateWithConnectionString_Api` with a value that represents the chosen API flavour.
+The setup action also automatically propagates the following environment variables:
+- `EnvVarToCreateWithConnectionString_Api` with a value that represents the chosen API flavour
+- `EnvVarToCreateWithConnectionString_DatabaseName` what a value that represents the database name
+- `EnvVarToCreateWithConnectionString_ContainerOrTableName` what a value that represents the container or table name
 
 ## Allowed regions
 
