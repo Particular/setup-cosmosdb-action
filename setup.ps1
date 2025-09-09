@@ -29,8 +29,8 @@ function Get-NearbyRegions {
   # If it's one of the common West/East forms, keep siblings first, then central-ish, then the opposite coast.
   if ($p -match '^westus(\d+)?$') {
     $siblings = @("westus","westus2","westus3","westcentralus") # west family first
-    $nearby   = @("southcentralus","centralus")                  # central next
-    $others   = @("eastus2","eastus","northcentralus")           # opposite side as last resort
+    $nearby   = @("southcentralus","centralus","northcentralus") # central family next
+    $others   = @("eastus2","eastus") # opposite coast last
     return @($primary) + $siblings + $nearby + $others
   }
   if ($p -match '^eastus(\d+)?$') {
