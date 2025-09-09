@@ -23,41 +23,50 @@ else {
 function Get-NearbyRegions {
   param([string]$primary)
 
-  # Normalize
   $p = ($primary ?? "").ToLower()
 
-  # If it's one of the common West/East forms, keep siblings first, then central-ish, then the opposite coast.
+  # West → central family → east
   if ($p -match '^westus(\d+)?$') {
-    $siblings = @("westus","westus2","westus3","westcentralus") # west family first
-    $nearby   = @("southcentralus","centralus","northcentralus") # central family next
-    $others   = @("eastus2","eastus") # opposite coast last
-    return @($primary) + $siblings + $nearby + $others
-  }
-  if ($p -match '^eastus(\d+)?$') {
-    $siblings = @("eastus","eastus2")                            # east family first
-    $nearby   = @("centralus","northcentralus","southcentralus") # central next
-    $others   = @("westus","westus2","westus3","westcentralus")  # opposite side as last resort
+    $siblings = @("westus","westus2","westus3","westcentralus")
+    $nearby   = @("southcentralus","centralus","northcentralus")
+    $others   = @("eastus2","eastus")
     return @($primary) + $siblings + $nearby + $others
   }
 
-  # Central flavors
+  # East → central family → west
+  if ($p -match '^eastus(\d+)?$') {
+    $siblings = @("eastus","eastus2")
+    $nearby   = @("centralus","northcentralus","southcentralus")
+    $others   = @("westus","westus2","westus3","westcentralus")
+    return @($primary) + $siblings + $nearby + $others
+  }
+
   switch -Regex ($p) {
+    # Central US (Iowa): central siblings → east → west
     '^centralus$' {
       return @($primary,"northcentralus","southcentralus","eastus","eastus2","westus","westus2","westus3","westcentralus")
     }
+    # North Central (Illinois): central siblings → east → west
     '^northcentralus$' {
-      return @($primary,"centralus","eastus","eastus2","westus","westus2","westus3","westcentralus","southcentralus")
+      return @($primary,"centralus","southcentralus","eastus","eastus2","westus","westus2","westus3","westcentralus")
     }
+    # South Central (Texas): central siblings → west → east
     '^southcentralus$' {
-      return @($primary,"centralus","westus","westus2","westus3","eastus","eastus2","westcentralus","northcentralus")
+      return @($primary,"centralus","northcentralus","westus","westus2","westus3","westcentralus","eastus","eastus2")
     }
+    # West Central (Utah): west siblings → central family → east
     '^westcentralus$' {
-      return @($primary,"westus","westus2","westus3","southcentralus","centralus","eastus2","eastus","northcentralus")
+      return @($primary,"westus","westus2","westus3","southcentralus","centralus","northcentralus","eastus2","eastus")
     }
   }
 
-  # Fallback: keep it in the US, preferring central, then same "direction" if we can guess it.
-  return @($primary,"centralus","eastus2","eastus","westus2","westus","westus3","northcentralus","southcentralus","westcentralus")
+  # Generic fallback: central family → east → west
+  return @(
+    $primary,
+    "centralus","northcentralus","southcentralus",
+    "eastus2","eastus",
+    "westus2","westus","westus3","westcentralus"
+  )
 }
 
 # Pull physical regions, and constrain to the US so we don't jump continents.
