@@ -130,6 +130,44 @@ if (-not $acctDetails) {
   exit 1
 }
 
+# Wait for CosmosDB account to be fully operational before proceeding
+echo "Waiting for CosmosDB account to be fully operational..."
+$maxRetries = 30
+$retryCount = 0
+$accountReady = $false
+
+while (-not $accountReady -and $retryCount -lt $maxRetries) {
+  try {
+    $accountStatus = az cosmosdb show --name $cosmosName --resource-group $resourceGroup --query "provisioningState" -o tsv 2>&1
+    
+    if ($LASTEXITCODE -eq 0 -and $accountStatus -eq "Succeeded") {
+      $null = az cosmosdb keys list --name $cosmosName --resource-group $resourceGroup --type keys -o json 2>&1
+      
+      if ($LASTEXITCODE -eq 0) {
+        echo "CosmosDB account is fully operational."
+        $accountReady = $true
+      } else {
+        echo "Account provisioning state is 'Succeeded' but keys are not yet accessible. Retry $($retryCount + 1)/$maxRetries..."
+        Start-Sleep -Seconds 10
+        $retryCount++
+      }
+    } else {
+      echo "Account provisioning state: $accountStatus. Retry $($retryCount + 1)/$maxRetries..."
+      Start-Sleep -Seconds 10
+      $retryCount++
+    }
+  } catch {
+    echo "Error checking account status: $_. Retry $($retryCount + 1)/$maxRetries..."
+    Start-Sleep -Seconds 10
+    $retryCount++
+  }
+}
+
+if (-not $accountReady) {
+  echo "CosmosDB account did not become operational within the expected time."
+  exit 1
+}
+
 if ($api -eq "Sql") {
   $databaseName = "CosmosDBPersistence"
   $containerName = "CosmosDBPersistenceContainer"
