@@ -130,11 +130,6 @@ if (-not $acctDetails) {
   exit 1
 }
 
-if (-not $accountReady) {
-  echo "CosmosDB account did not become operational within the expected time."
-  exit 1
-}
-
 if ($api -eq "Sql") {
   $databaseName = "CosmosDBPersistence"
   $containerName = "CosmosDBPersistenceContainer"
