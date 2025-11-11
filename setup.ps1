@@ -130,39 +130,6 @@ if (-not $acctDetails) {
   exit 1
 }
 
-# Wait for CosmosDB account to be fully operational before proceeding
-echo "Waiting for CosmosDB account to be fully operational..."
-$maxRetries = 30
-$retryCount = 0
-$accountReady = $false
-
-while (-not $accountReady -and $retryCount -lt $maxRetries) {
-  try {
-    $accountStatus = az cosmosdb show --name $cosmosName --resource-group $resourceGroup --query "provisioningState" -o tsv 2>&1
-    
-    if ($LASTEXITCODE -eq 0 -and $accountStatus -eq "Succeeded") {
-      $null = az cosmosdb keys list --name $cosmosName --resource-group $resourceGroup --type keys -o json 2>&1
-      
-      if ($LASTEXITCODE -eq 0) {
-        echo "CosmosDB account is fully operational."
-        $accountReady = $true
-      } else {
-        echo "Account provisioning state is 'Succeeded' but keys are not yet accessible. Retry $($retryCount + 1)/$maxRetries..."
-        Start-Sleep -Seconds 10
-        $retryCount++
-      }
-    } else {
-      echo "Account provisioning state: $accountStatus. Retry $($retryCount + 1)/$maxRetries..."
-      Start-Sleep -Seconds 10
-      $retryCount++
-    }
-  } catch {
-    echo "Error checking account status: $_. Retry $($retryCount + 1)/$maxRetries..."
-    Start-Sleep -Seconds 10
-    $retryCount++
-  }
-}
-
 if (-not $accountReady) {
   echo "CosmosDB account did not become operational within the expected time."
   exit 1
@@ -182,8 +149,37 @@ if ($api -eq "Sql") {
 if ($api -eq "Table") {
   $databaseName = "TablesDB"
   $containerName = $databaseName
-  echo "Creating CosmosDB Table API Table"
-  $tblDetails = az cosmosdb table create --account-name $cosmosName --resource-group $resourceGroup --name $databaseName | ConvertFrom-JSON
+  
+  echo "Creating CosmosDB Table API Table (with data plane readiness validation)..."
+  $tableReady = $false
+  $tableRetryCount = 0
+  $maxTableRetries = 30
+  
+  while (-not $tableReady -and $tableRetryCount -lt $maxTableRetries) {
+    $tableCreateResult = az cosmosdb table create --account-name $cosmosName --resource-group $resourceGroup --name $databaseName -o json 2>&1
+    
+    if ($LASTEXITCODE -eq 0) {
+      try {
+        $tblDetails = $tableCreateResult | ConvertFrom-JSON
+        echo "Table created successfully. Table API data plane is operational."
+        $tableReady = $true
+      } catch {
+        echo "Table creation returned success but failed to parse JSON. Retry $($tableRetryCount + 1)/$maxTableRetries..."
+        Start-Sleep -Seconds 10
+        $tableRetryCount++
+      }
+    } else {
+      echo "Table API endpoint not yet ready. Retry $($tableRetryCount + 1)/$maxTableRetries..."
+      echo "Error: $tableCreateResult"
+      Start-Sleep -Seconds 10
+      $tableRetryCount++
+    }
+  }
+  
+  if (-not $tableReady) {
+    echo "Failed to create Table API table within the expected time. Table API data plane may not be operational."
+    exit 1
+  }
 }
 
 echo "Getting CosmosDB access keys"
