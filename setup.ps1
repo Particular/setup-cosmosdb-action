@@ -163,7 +163,7 @@ if ($api -eq "Table") {
         $tables = $out | ConvertFrom-Json
 
         if ($tables | Where-Object { $_.name -eq $databaseName }) {
-          echo "Cosmos Table data plane is ready and table '$databaseName' is visible."
+          echo "Cosmos Table data plane is ready and table is visible."
           break
         }
 
