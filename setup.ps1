@@ -144,36 +144,45 @@ if ($api -eq "Sql") {
 if ($api -eq "Table") {
   $databaseName = "TablesDB"
   $containerName = $databaseName
-  
-  echo "Creating CosmosDB Table API Table (with data plane readiness validation)..."
-  $tableReady = $false
-  $tableRetryCount = 0
-  $maxTableRetries = 30
-  
-  while (-not $tableReady -and $tableRetryCount -lt $maxTableRetries) {
-    $tableCreateResult = az cosmosdb table create --account-name $cosmosName --resource-group $resourceGroup --name $databaseName -o json 2>&1
-    
+
+  echo "Creating CosmosDB Table API Table"
+  $null = az cosmosdb table create `
+            --account-name $cosmosName `
+            --resource-group $resourceGroup `
+            --name $databaseName `
+            -o none
+
+  echo "Waiting for Cosmos Table data plane readiness and table visibility..."
+  $maxWaitSeconds = 300
+  $start = Get-Date
+
+  while ($true) {
+    $out = az cosmosdb table list --account-name $cosmosName --resource-group $resourceGroup -o json 2>&1
     if ($LASTEXITCODE -eq 0) {
       try {
-        $tblDetails = $tableCreateResult | ConvertFrom-JSON
-        echo "Table created successfully. Table API data plane is operational."
-        $tableReady = $true
+        $tables = $out | ConvertFrom-Json
+
+        if ($tables | Where-Object { $_.name -eq $databaseName }) {
+          echo "Cosmos Table data plane is ready and table '$databaseName' is visible."
+          break
+        }
+
+        $null = az cosmosdb table create `
+                  --account-name $cosmosName `
+                  --resource-group $resourceGroup `
+                  --name $databaseName `
+                  -o none
       } catch {
-        echo "Table creation returned success but failed to parse JSON. Retry $($tableRetryCount + 1)/$maxTableRetries..."
-        Start-Sleep -Seconds 10
-        $tableRetryCount++
+        # fall through to wait
       }
-    } else {
-      echo "Table API endpoint not yet ready. Retry $($tableRetryCount + 1)/$maxTableRetries..."
-      echo "Error: $tableCreateResult"
-      Start-Sleep -Seconds 10
-      $tableRetryCount++
     }
-  }
-  
-  if (-not $tableReady) {
-    echo "Failed to create Table API table within the expected time. Table API data plane may not be operational."
-    exit 1
+
+    if ((Get-Date) - $start -gt [TimeSpan]::FromSeconds($maxWaitSeconds)) {
+      echo "Timed out waiting for Cosmos Table data plane readiness and table visibility."
+      exit 1
+    }
+
+    Start-Sleep -Seconds 10
   }
 }
 
