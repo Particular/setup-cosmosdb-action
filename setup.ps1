@@ -172,7 +172,6 @@ if ($api -eq "Table") {
   # Add Azure.Data.Tables (pin version if you want)
   dotnet add "$projPath" package Azure.Data.Tables | Out-Null
 
-  # Overwrite Program.cs with warmup logic
 @"
 using System;
 using System.Threading.Tasks;
@@ -225,7 +224,8 @@ class Program
         return 1;
     }
 }
-"@ | Set-Content -Path (Join-Path $warmupDir "Program.cs") -Encoding UTF8
+"@ |
+    Set-Content -Path "$warmupDir/Program.cs" -Encoding UTF8
 
   Write-Host "Restoring CosmosTableWarmup project..."
   dotnet restore "$projPath" | Out-Null
