@@ -152,82 +152,96 @@ if ($api -eq "Table") {
               --name $databaseName `
               -o none
 
-  Write-Host "Ensuring NuGet source for nuget.org is registered..."
-  if (-not (Get-PackageSource -Name "nuget.org" -ErrorAction SilentlyContinue)) {
-    Register-PackageSource -Name "nuget.org" -ProviderName NuGet -Location "https://www.nuget.org/api/v2" -Trusted | Out-Null
+  # Warmup with a small C# console using Azure.Data.Tables
+  Write-Host "Preparing temporary CosmosTableWarmup console project..."
+
+  $warmupDir = Join-Path $PSScriptRoot ".cosmos-warmup"
+  if (Test-Path $warmupDir) {
+    Remove-Item $warmupDir -Recurse -Force
   }
+  New-Item -ItemType Directory -Path $warmupDir | Out-Null
 
-  # Temp folder for NuGet packages
-  $nugetDir = Join-Path $PSScriptRoot ".nuget-tables"
-  if (Test-Path $nugetDir) {
-    Remove-Item $nugetDir -Recurse -Force
-  }
-  New-Item -ItemType Directory -Path $nugetDir | Out-Null
+  Push-Location $warmupDir
 
-  Push-Location $nugetDir
+  # Create minimal console project
+  dotnet new console --framework net8.0 --no-restore --output "$warmupDir" | Out-Null
 
-  Write-Host "Installing Azure.Data.Tables and Azure.Core via NuGet (no dependencies)..."
+  # Add Azure.Data.Tables (you can pin the version if you want)
+  dotnet add "$warmupDir/CosmosTableWarmup.csproj" package Azure.Data.Tables | Out-Null
 
-  Install-Package -Name Azure.Data.Tables -ProviderName NuGet -Scope CurrentUser -SkipDependencies -Destination $nugetDir -Force | Out-Null
-  Install-Package -Name Azure.Core         -ProviderName NuGet -Scope CurrentUser -SkipDependencies -Destination $nugetDir -Force | Out-Null
+  # Overwrite Program.cs with our warmup code
+@"
+using System;
+using System.Threading.Tasks;
+using Azure;
+using Azure.Data.Tables;
 
-  $azureCoreDll = Get-ChildItem -Recurse -Filter "Azure.Core.dll"           | Select-Object -First 1 -ExpandProperty FullName
-  $tablesDll    = Get-ChildItem -Recurse -Filter "Azure.Data.Tables.dll"    | Select-Object -First 1 -ExpandProperty FullName
+class Program
+{
+    static async Task<int> Main(string[] args)
+    {
+        if (args.Length < 2)
+        {
+            Console.Error.WriteLine("Usage: CosmosTableWarmup <connectionString> <tableName>");
+            return 1;
+        }
 
-  if (-not $azureCoreDll -or -not $tablesDll) {
-    Write-Error "Could not locate Azure.Core.dll or Azure.Data.Tables.dll under $nugetDir"
-    Get-ChildItem -Recurse $nugetDir
-    exit 1
-  }
+        var connectionString = args[0];
+        var tableName        = args[1];
 
-  Write-Host "Loading Azure.Core from $azureCoreDll"
-  [System.Reflection.Assembly]::LoadFrom($azureCoreDll) | Out-Null
+        const int minutes      = 5;
+        const int delaySeconds = 15;
+        var maxAttempts        = minutes * (60 / delaySeconds);
 
-  Write-Host "Loading Azure.Data.Tables from $tablesDll"
-  [System.Reflection.Assembly]::LoadFrom($tablesDll) | Out-Null
+        Console.WriteLine($"Cosmos warmup for table '{tableName}' (up to {minutes} minutes)...");
+
+        var service = new TableServiceClient(connectionString);
+
+        for (var i = 0; i < maxAttempts; i++)
+        {
+            Console.WriteLine($"Warmup attempt {i + 1}/{maxAttempts}...");
+
+            try
+            {
+                var tableClient = service.GetTableClient(tableName);
+                var response    = await tableClient.CreateIfNotExistsAsync();
+
+                Console.WriteLine($"Warmup created or confirmed table '{tableName}' to test Cosmos DB readiness");
+                Console.WriteLine($"Waiting extra {delaySeconds}s for Cosmos DB to be available anyway...");
+                await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
+                return 0;
+            }
+            catch (RequestFailedException e) when (e.Status == 403)
+            {
+                Console.WriteLine($"Create table failed with Status 403 ({e.Message}), will wait {delaySeconds}s up to {minutes}m");
+                await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
+            }
+        }
+
+        Console.Error.WriteLine($"Warmup timed out after {minutes} minutes waiting for Cosmos Table readiness.");
+        return 1;
+    }
+}
+"@ | Set-Content -Path "$warmupDir/Program.cs" -Encoding UTF8
+
+  # Restore and run the warmup
+  Write-Host "Restoring CosmosTableWarmup project..."
+  dotnet restore "$warmupDir/CosmosTableWarmup.csproj" | Out-Null
+
+  Write-Host "Running CosmosTableWarmup..."
+  dotnet run --project "$warmupDir/CosmosTableWarmup.csproj" --configuration Release -- `
+    "$cosmosConnectString" "$databaseName"
+
+  $exitCode = $LASTEXITCODE
 
   Pop-Location
 
-  Write-Host "Probing Cosmos DB Table data plane using .NET TableClient..."
-
-  # Use the same semantics as your C# OneTimeSetUp
-  $maxMinutes   = 5
-  $sleepSeconds = 15
-  $maxAttempts  = $maxMinutes * (60 / $sleepSeconds)
-  $ready        = $false
-
-  for ($i = 0; $i -lt $maxAttempts; $i++) {
-    Write-Host "Warmup attempt $($i + 1)/$maxAttempts..."
-
-    try {
-      # new up the clients via the loaded assembly
-      $service = [Azure.Data.Tables.TableServiceClient]::new($cosmosConnectString)
-      $table   = $service.GetTableClient($databaseName)
-      $resp    = $table.CreateIfNotExists()
-
-      Write-Host "Warmup created or confirmed table '$databaseName' to test Cosmos DB readiness"
-      Write-Host "Waiting extra ${sleepSeconds}s for Cosmos DB to be fully available..."
-      Start-Sleep -Seconds $sleepSeconds
-      $ready = $true
-      break
-    }
-    catch [Azure.RequestFailedException] {
-      $status = $_.Exception.Status
-      if ($status -eq 403) {
-        Write-Host "Create table failed with Status 403 ($($status)): waiting ${sleepSeconds}s (up to $maxMinutes minutes) then retrying..."
-        Start-Sleep -Seconds $sleepSeconds
-        continue
-      }
-
-      Write-Host "Warmup failed with non-403 error: $($_.Exception.Message)"
-      exit 1
-    }
+  if ($exitCode -ne 0) {
+    Write-Error "CosmosTableWarmup failed with exit code $exitCode"
+    exit $exitCode
   }
 
-  if (-not $ready) {
-    Write-Error "Timed out after $maxMinutes minutes waiting for Cosmos Table data plane readiness."
-    exit 1
-  }
+  Write-Host "Cosmos Table warmup completed successfully."
 }
 
 echo "Getting CosmosDB access keys"
