@@ -169,85 +169,57 @@ $containerNameEnvName = "$($connectionStringName)_ContainerOrTableName"
 echo "$containerNameEnvName=$containerName" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
 
 if ($api -eq "Table") {
-  Write-Host "Preparing temporary CosmosTableWarmup console project..."
-
-  $warmupDir = Join-Path $PSScriptRoot ".cosmos-warmup"
-  if (Test-Path $warmupDir) {
-    Remove-Item $warmupDir -Recurse -Force
-  }
-  New-Item -ItemType Directory -Path $warmupDir | Out-Null
-
-  # Create minimal console project with a known name
-  dotnet new console `
-    --framework net8.0 `
-    --name CosmosTableWarmup `
-    --output "$warmupDir" `
-    --no-restore | Out-Null
-
-  $projPath = Join-Path $warmupDir "CosmosTableWarmup.csproj"
-
-  # Add Azure.Data.Tables (pin version if you want)
-  dotnet add "$projPath" package Azure.Data.Tables | Out-Null
-
 @"
+#:package Azure.Data.Tables@*
 using System;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Data.Tables;
 
-class Program
+
+if (args.Length < 2)
 {
-    static async Task<int> Main(string[] args)
+    Console.Error.WriteLine("Usage: CosmosTableWarmup <connectionString> <tableName>");
+    return 1;
+}
+
+var connectionString = args[0];
+var tableName        = args[1];
+
+const int minutes      = 5;
+const int delaySeconds = 15;
+var maxAttempts        = minutes * (60 / delaySeconds);
+
+Console.WriteLine($"Cosmos warmup for table '{tableName}' (up to {minutes} minutes)...");
+
+var service = new TableServiceClient(connectionString);
+
+for (var i = 0; i < maxAttempts; i++)
+{
+    Console.WriteLine($"Warmup attempt {i + 1}/{maxAttempts}...");
+
+    try
     {
-        if (args.Length < 2)
-        {
-            Console.Error.WriteLine("Usage: CosmosTableWarmup <connectionString> <tableName>");
-            return 1;
-        }
+        var tableClient = service.GetTableClient(tableName);
+        var response    = await tableClient.CreateIfNotExistsAsync();
 
-        var connectionString = args[0];
-        var tableName        = args[1];
-
-        const int minutes      = 5;
-        const int delaySeconds = 15;
-        var maxAttempts        = minutes * (60 / delaySeconds);
-
-        Console.WriteLine($"Cosmos warmup for table '{tableName}' (up to {minutes} minutes)...");
-
-        var service = new TableServiceClient(connectionString);
-
-        for (var i = 0; i < maxAttempts; i++)
-        {
-            Console.WriteLine($"Warmup attempt {i + 1}/{maxAttempts}...");
-
-            try
-            {
-                var tableClient = service.GetTableClient(tableName);
-                var response    = await tableClient.CreateIfNotExistsAsync();
-
-                Console.WriteLine($"Warmup created or confirmed table '{tableName}' to test Cosmos DB readiness");
-                Console.WriteLine($"Waiting extra {delaySeconds}s for Cosmos DB to be available anyway...");
-                await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
-                return 0;
-            }
-            catch (RequestFailedException e) when (e.Status == 403)
-            {
+        Console.WriteLine($"Warmup created or confirmed table '{tableName}' to test Cosmos DB readiness");
+        Console.WriteLine($"Waiting extra {delaySeconds}s for Cosmos DB to be available anyway...");
+        await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
+        return 0;
+    }
+    catch (RequestFailedException e) when (e.Status == 403)
+    {
                 Console.WriteLine($"Create table failed with Status 403 ({e.Message}), will wait {delaySeconds}s up to {minutes}m");
                 await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
-            }
-        }
-
-        Console.Error.WriteLine($"Warmup timed out after {minutes} minutes waiting for Cosmos Table readiness.");
-        return 1;
     }
 }
-"@ | Set-Content -Path "$warmupDir/Program.cs" -Encoding UTF8
+Console.Error.WriteLine($"Warmup timed out after {minutes} minutes waiting for Cosmos Table readiness.");
+return 1;
+"@ | Set-Content -Path "app.cs" -Encoding UTF8
 
-  Write-Host "Restoring CosmosTableWarmup project..."
-  dotnet restore "$projPath" | Out-Null
-
-  Write-Host "Running CosmosTableWarmup..."
-  dotnet run --project "$projPath" --configuration Release -- `
+  Write-Host "Running warmup check..."
+  dotnet run app.cs -- `
     "$cosmosConnectString" "$databaseName"
   $exitCode = $LASTEXITCODE
 
