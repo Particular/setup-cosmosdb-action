@@ -224,8 +224,7 @@ class Program
         return 1;
     }
 }
-"@ |
-    Set-Content -Path "$warmupDir/Program.cs" -Encoding UTF8
+"@ | Set-Content -Path "$warmupDir/Program.cs" -Encoding UTF8
 
   Write-Host "Restoring CosmosTableWarmup project..."
   dotnet restore "$projPath" | Out-Null
@@ -234,27 +233,6 @@ class Program
   dotnet run --project "$projPath" --configuration Release -- `
     "$cosmosConnectString" "$databaseName"
   $exitCode = $LASTEXITCODE
-
-  if ($exitCode -ne 0) {
-    Write-Error "CosmosTableWarmup failed with exit code $exitCode"
-    exit $exitCode
-  }
-
-  Write-Host "Cosmos Table warmup completed successfully."
-}
-"@ | Set-Content -Path "$warmupDir/Program.cs" -Encoding UTF8
-
-  # Restore and run the warmup
-  Write-Host "Restoring CosmosTableWarmup project..."
-  dotnet restore "$warmupDir/CosmosTableWarmup.csproj" | Out-Null
-
-  Write-Host "Running CosmosTableWarmup..."
-  dotnet run --project "$warmupDir/CosmosTableWarmup.csproj" --configuration Release -- `
-    "$cosmosConnectString" "$databaseName"
-
-  $exitCode = $LASTEXITCODE
-
-  Pop-Location
 
   if ($exitCode -ne 0) {
     Write-Error "CosmosTableWarmup failed with exit code $exitCode"
