@@ -145,16 +145,79 @@ if ($api -eq "Table") {
   $databaseName = "TablesDB"
   $containerName = $databaseName
 
-  echo "Creating CosmosDB Table API Table"
+  Write-Host "Creating CosmosDB Table API Table"
   $null = az cosmosdb table create `
-            --account-name $cosmosName `
-            --resource-group $resourceGroup `
-            --name $databaseName `
-            -o none
+              --account-name $cosmosName `
+              --resource-group $resourceGroup `
+              --name $databaseName `
+              -o none
 
-  echo "Waiting for Cosmos Table data plane readiness and table visibility..."
-  # Yes this is a hardcoded value, we tried a few things but more sophisticated approaches still failed
-  Start-Sleep -Seconds 180
+  Write-Host "Preparing temporary .NET project to load Azure.Data.Tables..."
+
+  $tmpDir = Join-Path $PSScriptRoot ".cosmos-warmup"
+  if (Test-Path $tmpDir) { Remove-Item $tmpDir -Recurse -Force }
+  New-Item -ItemType Directory -Path $tmpDir | Out-Null
+
+  Push-Location $tmpDir
+
+  dotnet new console --framework net8.0 --no-restore | Out-Null
+
+  $packageVersion = "12.9.0"
+  dotnet add package Azure.Data.Tables --version $packageVersion | Out-Null
+
+  dotnet restore | Out-Null
+
+  Pop-Location
+
+  $pkgRoot = Join-Path $HOME ".nuget/packages/azure.data.tables/$packageVersion/lib/net8.0"
+  $dllPath = Join-Path $pkgRoot "Azure.Data.Tables.dll"
+
+  if (!(Test-Path $dllPath)) {
+    Write-Error "Azure.Data.Tables.dll not found at $dllPath"
+    exit 1
+  }
+
+  Write-Host "Loading Azure.Data.Tables.dll"
+  Add-Type -Path $dllPath
+
+  Write-Host "Probing Cosmos DB Table data plane using .NET TableClient..."
+
+  # Create the Table clients
+  $service = [Azure.Data.Tables.TableServiceClient]::new($cosmosConnectString)
+  $table   = $service.GetTableClient($databaseName)
+
+  $maxMinutes   = 5
+  $sleepSeconds = 15
+  $maxAttempts  = $maxMinutes * (60 / $sleepSeconds)
+  $ready = $false
+
+  for ($i = 0; $i -lt $maxAttempts; $i++) {
+    Write-Host "Warmup attempt $($i + 1)/$maxAttempts..."
+
+    try {
+      $resp = $table.CreateIfNotExists()
+      Write-Host "Warmup created or confirmed table '$databaseName'"
+      Write-Host "Waiting extra ${sleepSeconds}s for full readiness..."
+      Start-Sleep -Seconds $sleepSeconds
+      $ready = $true
+      break
+    }
+    catch [Azure.RequestFailedException] {
+      $status = $_.Exception.Status
+      if ($status -eq 403) {
+        Write-Host "Warmup got 403 Forbidden, retrying in ${sleepSeconds}s..."
+        Start-Sleep -Seconds $sleepSeconds
+        continue
+      }
+      Write-Host "Warmup failed with non-403 error: $($_.Exception.Message)"
+      exit 1
+    }
+  }
+
+  if (-not $ready) {
+    Write-Error "Timed out waiting for Cosmos Table data plane readiness."
+    exit 1
+  }
 }
 
 echo "Getting CosmosDB access keys"
