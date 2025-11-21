@@ -152,7 +152,6 @@ if ($api -eq "Table") {
               --name $databaseName `
               -o none
 
-  # Warmup with a small C# console using Azure.Data.Tables
   Write-Host "Preparing temporary CosmosTableWarmup console project..."
 
   $warmupDir = Join-Path $PSScriptRoot ".cosmos-warmup"
@@ -161,15 +160,19 @@ if ($api -eq "Table") {
   }
   New-Item -ItemType Directory -Path $warmupDir | Out-Null
 
-  Push-Location $warmupDir
+  # Create minimal console project with a known name
+  dotnet new console `
+    --framework net8.0 `
+    --name CosmosTableWarmup `
+    --output "$warmupDir" `
+    --no-restore | Out-Null
 
-  # Create minimal console project
-  dotnet new console --framework net8.0 --no-restore --output "$warmupDir" | Out-Null
+  $projPath = Join-Path $warmupDir "CosmosTableWarmup.csproj"
 
-  # Add Azure.Data.Tables (you can pin the version if you want)
-  dotnet add "$warmupDir/CosmosTableWarmup.csproj" package Azure.Data.Tables | Out-Null
+  # Add Azure.Data.Tables (pin version if you want)
+  dotnet add "$projPath" package Azure.Data.Tables | Out-Null
 
-  # Overwrite Program.cs with our warmup code
+  # Overwrite Program.cs with warmup logic
 @"
 using System;
 using System.Threading.Tasks;
@@ -221,6 +224,23 @@ class Program
         Console.Error.WriteLine($"Warmup timed out after {minutes} minutes waiting for Cosmos Table readiness.");
         return 1;
     }
+}
+"@ | Set-Content -Path (Join-Path $warmupDir "Program.cs") -Encoding UTF8
+
+  Write-Host "Restoring CosmosTableWarmup project..."
+  dotnet restore "$projPath" | Out-Null
+
+  Write-Host "Running CosmosTableWarmup..."
+  dotnet run --project "$projPath" --configuration Release -- `
+    "$cosmosConnectString" "$databaseName"
+  $exitCode = $LASTEXITCODE
+
+  if ($exitCode -ne 0) {
+    Write-Error "CosmosTableWarmup failed with exit code $exitCode"
+    exit $exitCode
+  }
+
+  Write-Host "Cosmos Table warmup completed successfully."
 }
 "@ | Set-Content -Path "$warmupDir/Program.cs" -Encoding UTF8
 
