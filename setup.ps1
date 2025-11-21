@@ -153,37 +153,8 @@ if ($api -eq "Table") {
             -o none
 
   echo "Waiting for Cosmos Table data plane readiness and table visibility..."
-  $maxWaitSeconds = 300
-  $start = Get-Date
-
-  while ($true) {
-    $out = az cosmosdb table list --account-name $cosmosName --resource-group $resourceGroup -o json 2>&1
-    if ($LASTEXITCODE -eq 0) {
-      try {
-        $tables = $out | ConvertFrom-Json
-
-        if ($tables | Where-Object { $_.name -eq $databaseName }) {
-          echo "Cosmos Table data plane is ready and table is visible."
-          break
-        }
-
-        $null = az cosmosdb table create `
-                  --account-name $cosmosName `
-                  --resource-group $resourceGroup `
-                  --name $databaseName `
-                  -o none
-      } catch {
-        # fall through to wait
-      }
-    }
-
-    if ((Get-Date) - $start -gt [TimeSpan]::FromSeconds($maxWaitSeconds)) {
-      echo "Timed out waiting for Cosmos Table data plane readiness and table visibility."
-      exit 1
-    }
-
-    Start-Sleep -Seconds 10
-  }
+  # Yes this is a hardcoded value, we tried a few things but more sophisticated approaches still failed
+  Start-Sleep -Seconds 180
 }
 
 echo "Getting CosmosDB access keys"
