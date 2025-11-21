@@ -151,7 +151,24 @@ if ($api -eq "Table") {
               --resource-group $resourceGroup `
               --name $databaseName `
               -o none
+}
 
+echo "Getting CosmosDB access keys"
+$keyDetails = az cosmosdb keys list --name $cosmosName --resource-group $resourceGroup --type connection-strings | ConvertFrom-Json
+$cosmosConnectString = $($keyDetails.connectionStrings | Where-Object { $_.keyKind -eq 'Primary' -and $_.type -eq $api }).connectionString
+echo "::add-mask::$cosmosConnectString"
+echo "$connectionStringName=$cosmosConnectString" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+
+$apiFlavour = "$($connectionStringName)_Api"
+echo "$apiFlavour=$api" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+
+$databaseNameEnvName = "$($connectionStringName)_DatabaseName"
+echo "$databaseNameEnvName=$databaseName" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+
+$containerNameEnvName = "$($connectionStringName)_ContainerOrTableName"
+echo "$containerNameEnvName=$containerName" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+
+if ($api -eq "Table") {
   Write-Host "Preparing temporary CosmosTableWarmup console project..."
 
   $warmupDir = Join-Path $PSScriptRoot ".cosmos-warmup"
@@ -241,18 +258,3 @@ class Program
 
   Write-Host "Cosmos Table warmup completed successfully."
 }
-
-echo "Getting CosmosDB access keys"
-$keyDetails = az cosmosdb keys list --name $cosmosName --resource-group $resourceGroup --type connection-strings | ConvertFrom-Json
-$cosmosConnectString = $($keyDetails.connectionStrings | Where-Object { $_.keyKind -eq 'Primary' -and $_.type -eq $api }).connectionString
-echo "::add-mask::$cosmosConnectString"
-echo "$connectionStringName=$cosmosConnectString" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
-
-$apiFlavour = "$($connectionStringName)_Api"
-echo "$apiFlavour=$api" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
-
-$databaseNameEnvName = "$($connectionStringName)_DatabaseName"
-echo "$databaseNameEnvName=$databaseName" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
-
-$containerNameEnvName = "$($connectionStringName)_ContainerOrTableName"
-echo "$containerNameEnvName=$containerName" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
