@@ -99,14 +99,12 @@ foreach ($tryRegion in $orderedRegions) {
 
   if ($code -eq 0) {
     try {
-      echo "before parsing output:"
-      echo $out
-      echo "before parsing output done"
       $acctDetails = $out | ConvertFrom-Json
       $chosenRegion = $tryRegion
       echo "Cosmos account created in region: $chosenRegion"
       break
     } catch {
+      echo $_
       echo "Failed to parse JSON from az output:"
       echo $out
       echo "Non-JSON success output; aborting fallback."
