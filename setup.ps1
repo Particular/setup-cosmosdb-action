@@ -13,7 +13,7 @@ $resourceGroup = $Env:RESOURCE_GROUP_OVERRIDE ?? "GitHubActions-RG"
 if ($Env:REGION_OVERRIDE) {
   $region = $Env:REGION_OVERRIDE
 }
-else { 
+else {
   echo "Getting the Azure region in which this workflow is running..."
   $hostInfo = curl --silent -H Metadata:true "169.254.169.254/metadata/instance?api-version=2017-08-01" | ConvertFrom-Json
   $region = $hostInfo.compute.location
@@ -99,6 +99,9 @@ foreach ($tryRegion in $orderedRegions) {
 
   if ($code -eq 0) {
     try {
+      echo "before parsing output:"
+      echo $out
+      echo "before parsing output done"
       $acctDetails = $out | ConvertFrom-Json
       $chosenRegion = $tryRegion
       echo "Cosmos account created in region: $chosenRegion"
