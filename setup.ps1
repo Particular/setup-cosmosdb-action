@@ -6,6 +6,8 @@ param (
     [string]$azureCredentials
 )
 
+pip install --upgrade azure-mgmt-cosmosdb
+
 $credentials = $azureCredentials | ConvertFrom-Json
 
 $resourceGroup = $Env:RESOURCE_GROUP_OVERRIDE ?? "GitHubActions-RG"
