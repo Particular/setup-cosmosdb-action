@@ -106,7 +106,6 @@ foreach ($tryRegion in $orderedRegions) {
       echo "Cosmos account created in region: $chosenRegion"
       break
     } catch {
-      echo $_
       echo "Failed to parse JSON from az output:"
       echo $out
       echo "Non-JSON success output; aborting fallback."
