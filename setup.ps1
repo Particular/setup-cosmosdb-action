@@ -6,8 +6,6 @@ param (
     [string]$azureCredentials
 )
 
-pip install --upgrade azure-mgmt-cosmosdb
-
 $credentials = $azureCredentials | ConvertFrom-Json
 
 $resourceGroup = $Env:RESOURCE_GROUP_OVERRIDE ?? "GitHubActions-RG"
@@ -90,15 +88,15 @@ $chosenRegion = $null
 foreach ($tryRegion in $orderedRegions) {
   echo "Creating CosmosDB database account $cosmosName in $tryRegion (This can take awhile.)"
 
-  az --version
-
   $out  = az cosmosdb create `
             --name $cosmosName `
             --location regionName=$tryRegion failoverPriority=0 isZoneRedundant=False `
             --resource-group $resourceGroup `
             --capabilities $capabilities `
             --tags $packageTag $runnerOsTag $dateTag `
-            --output json 2>&1
+            --only-show-errors `
+            --output json
+  
   $code = $LASTEXITCODE
 
   if ($code -eq 0) {
