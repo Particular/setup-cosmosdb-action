@@ -13,7 +13,7 @@ $resourceGroup = $Env:RESOURCE_GROUP_OVERRIDE ?? "GitHubActions-RG"
 if ($Env:REGION_OVERRIDE) {
   $region = $Env:REGION_OVERRIDE
 }
-else { 
+else {
   echo "Getting the Azure region in which this workflow is running..."
   $hostInfo = curl --silent -H Metadata:true "169.254.169.254/metadata/instance?api-version=2017-08-01" | ConvertFrom-Json
   $region = $hostInfo.compute.location
@@ -94,7 +94,9 @@ foreach ($tryRegion in $orderedRegions) {
             --resource-group $resourceGroup `
             --capabilities $capabilities `
             --tags $packageTag $runnerOsTag $dateTag `
-            --output json 2>&1
+            --only-show-errors `
+            --output json
+  
   $code = $LASTEXITCODE
 
   if ($code -eq 0) {
@@ -134,7 +136,7 @@ if ($api -eq "Sql") {
   $databaseName = "CosmosDBPersistence"
   $containerName = "CosmosDBPersistenceContainer"
   echo "Creating CosmosDB SQL Database "
-  $dbDetails = az cosmosdb sql database create --name $databaseName --account-name $cosmosName --resource-group $resourceGroup | ConvertFrom-Json
+  $dbDetails = az cosmosdb sql database create --name $databaseName --account-name $cosmosName --resource-group $resourceGroup --only-show-errors --output json | ConvertFrom-Json
   echo "Creating CosmosDB SQL Database Container"
   $containerDetails = az cosmosdb sql container create --resource-group $resourceGroup --account-name $cosmosName --database-name $databaseName --name $containerName --partition-key-path "/id"
   echo "Assigning Cosmos DB Built-in Data Contributor"
@@ -150,7 +152,7 @@ if ($api -eq "Table") {
             --account-name $cosmosName `
             --resource-group $resourceGroup `
             --name $databaseName `
-            -o none
+            --output none
 
   echo "Waiting for Cosmos Table data plane readiness and table visibility..."
   # Yes this is a hardcoded value, we tried a few things but more sophisticated approaches still failed
@@ -158,7 +160,7 @@ if ($api -eq "Table") {
 }
 
 echo "Getting CosmosDB access keys"
-$keyDetails = az cosmosdb keys list --name $cosmosName --resource-group $resourceGroup --type connection-strings | ConvertFrom-Json
+$keyDetails = az cosmosdb keys list --name $cosmosName --resource-group $resourceGroup --type connection-strings --only-show-errors --output json | ConvertFrom-Json
 $cosmosConnectString = $($keyDetails.connectionStrings | Where-Object { $_.keyKind -eq 'Primary' -and $_.type -eq $api }).connectionString
 echo "::add-mask::$cosmosConnectString"
 echo "$connectionStringName=$cosmosConnectString" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
