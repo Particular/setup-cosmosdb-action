@@ -1,5 +1,4 @@
 using System.Data.Common;
-using Azure.Data.Tables;
 using Azure.Identity;
 using Microsoft.Azure.Cosmos;
 using NUnit.Framework;
